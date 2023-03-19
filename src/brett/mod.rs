@@ -1,4 +1,7 @@
-use std::{fmt::{Debug, Formatter, self}, ops::Not};
+use std::{
+    fmt::{self, Debug, Formatter},
+    ops::Not, default,
+};
 
 mod position;
 pub use position::*;

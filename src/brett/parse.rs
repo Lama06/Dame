@@ -14,7 +14,7 @@ impl Feld {
 }
 
 impl Zeile {
-    fn parse(zeile: usize, text: &str) -> Option<Self> {
+    pub fn parse(zeile: usize, text: &str) -> Option<Self> {
         if text.chars().count() != SpielBrett::SIZE {
             return None;
         }

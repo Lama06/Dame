@@ -174,14 +174,19 @@ impl SpielBrett {
                 }
 
                 for richtung_h in [RichtungHorizontal::Links, RichtungHorizontal::Rechts] {
-                    'richtung_v: for richtung_v in [RichtungVertikal::Oben, RichtungVertikal::Unten] {
+                    'richtung_v: for richtung_v in [RichtungVertikal::Oben, RichtungVertikal::Unten]
+                    {
                         for number_of_fields in 1..=SpielBrett::SIZE {
                             let neue_position = Position {
-                                spalte: match position.spalte as isize + richtung_h.offset() * number_of_fields as isize {
+                                spalte: match position.spalte as isize
+                                    + richtung_h.offset() * number_of_fields as isize
+                                {
                                     spalte @ 0.. => spalte as usize,
                                     _ => continue,
                                 },
-                                zeile: match position.zeile as isize + richtung_v.offset() * number_of_fields as isize {
+                                zeile: match position.zeile as isize
+                                    + richtung_v.offset() * number_of_fields as isize
+                                {
                                     zeile @ 0.. => zeile as usize,
                                     _ => continue,
                                 },
@@ -213,16 +218,19 @@ impl SpielBrett {
             Feld::Stein(_) | Feld::Leer => return,
         };
 
-        
         for richtung_h in [RichtungHorizontal::Links, RichtungHorizontal::Rechts] {
             'richtung_v: for richtung_v in [RichtungVertikal::Oben, RichtungVertikal::Unten] {
                 for number_of_fields in 1..=SpielBrett::SIZE {
                     let schlagen_position = Position {
-                        spalte: match position.spalte as isize + richtung_h.offset() * number_of_fields as isize {
+                        spalte: match position.spalte as isize
+                            + richtung_h.offset() * number_of_fields as isize
+                        {
                             spalte @ 0.. => spalte as usize,
                             _ => continue,
                         },
-                        zeile: match position.zeile as isize + richtung_v.offset() * number_of_fields as isize {
+                        zeile: match position.zeile as isize
+                            + richtung_v.offset() * number_of_fields as isize
+                        {
                             zeile @ 0.. => zeile as usize,
                             _ => continue,
                         },
@@ -230,22 +238,30 @@ impl SpielBrett {
                     if !schlagen_position.valid() {
                         continue;
                     }
-                    
+
                     match self.get(schlagen_position) {
                         Feld::Leer => continue,
-                        Feld::Dame(schlagen_spieler) | Feld::Stein(schlagen_spieler) if schlagen_spieler == spieler => continue 'richtung_v,
+                        Feld::Dame(schlagen_spieler) | Feld::Stein(schlagen_spieler)
+                            if schlagen_spieler == spieler =>
+                        {
+                            continue 'richtung_v
+                        }
                         Feld::Dame(_) | Feld::Stein(_) => (),
                     }
 
                     let neue_position = Position {
-                        spalte: match position.spalte as isize + richtung_h.offset() * (number_of_fields as isize + 1) {
+                        spalte: match position.spalte as isize
+                            + richtung_h.offset() * (number_of_fields as isize + 1)
+                        {
                             spalte @ 0.. => spalte as usize,
                             _ => continue,
                         },
-                        zeile: match position.zeile as isize + richtung_v.offset() * (number_of_fields as isize + 1) {
+                        zeile: match position.zeile as isize
+                            + richtung_v.offset() * (number_of_fields as isize + 1)
+                        {
                             zeile @ 0.. => zeile as usize,
                             _ => continue,
-                        }
+                        },
                     };
                     if !neue_position.valid() {
                         continue;
@@ -313,7 +329,7 @@ mod tests {
                 brett_text.push('\n');
             })*
             let brett = SpielBrett::parse(&brett_text).unwrap();
-            
+
             let mut possible_moves = HashSet::new();
             $({
                 let mut brett_text = String::new();
@@ -424,7 +440,7 @@ mod tests {
             " _ _ _ _"
             "_ m _ _ "
             " _ _ _ c"
-            
+
             possible moves for Spieler::Mensch:
             "_ _ _ _ "
             " m _ _ _"
