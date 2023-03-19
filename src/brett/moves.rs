@@ -79,14 +79,10 @@ impl SpielBrett {
                     },
                 );
 
-                let mut following_moves = HashSet::new();
-                neues_brett.append_stein_schlagen_moves(neue_position, true, &mut following_moves);
-                if following_moves.len() == 0 {
+                let moves_len_before_append_following = moves.len();
+                neues_brett.append_stein_schlagen_moves(neue_position, true, moves);
+                if moves_len_before_append_following == moves.len() {
                     moves.insert(neues_brett);
-                } else {
-                    for following_move in following_moves {
-                        moves.insert(following_move);
-                    }
                 }
             }
         }
@@ -163,14 +159,144 @@ impl SpielBrett {
         }
     }
 
+    fn append_all_dame_moves(&self, spieler: Spieler, moves: &mut HashSet<Self>) {
+        for spalte in 0..SpielBrett::SIZE {
+            for zeile in 0..SpielBrett::SIZE {
+                let position = Position { spalte, zeile };
+                if !position.valid() {
+                    continue;
+                }
+
+                match self.get(position) {
+                    Feld::Leer | Feld::Stein(_) => continue,
+                    Feld::Dame(dame_spieler) if dame_spieler != spieler => continue,
+                    Feld::Dame(_) => (),
+                }
+
+                for richtung_h in [RichtungHorizontal::Links, RichtungHorizontal::Rechts] {
+                    'richtung_v: for richtung_v in [RichtungVertikal::Oben, RichtungVertikal::Unten] {
+                        for number_of_fields in 1..=SpielBrett::SIZE {
+                            let neue_position = Position {
+                                spalte: match position.spalte as isize + richtung_h.offset() * number_of_fields as isize {
+                                    spalte @ 0.. => spalte as usize,
+                                    _ => continue,
+                                },
+                                zeile: match position.zeile as isize + richtung_v.offset() * number_of_fields as isize {
+                                    zeile @ 0.. => zeile as usize,
+                                    _ => continue,
+                                },
+                            };
+                            if !neue_position.valid() {
+                                continue;
+                            }
+                            if !matches!(self.get(neue_position), Feld::Leer) {
+                                continue 'richtung_v;
+                            }
+
+                            let mut neues_brett = self.clone();
+                            neues_brett.set(position, Feld::Leer);
+                            neues_brett.set(neue_position, Feld::Dame(spieler));
+                            moves.insert(neues_brett);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    fn append_dame_schlagen_moves(&self, position: Position, moves: &mut HashSet<Self>) {
+        if !position.valid() {
+            return;
+        }
+        let spieler = match self.get(position) {
+            Feld::Dame(spieler) => spieler,
+            Feld::Stein(_) | Feld::Leer => return,
+        };
+
+        
+        for richtung_h in [RichtungHorizontal::Links, RichtungHorizontal::Rechts] {
+            'richtung_v: for richtung_v in [RichtungVertikal::Oben, RichtungVertikal::Unten] {
+                for number_of_fields in 1..=SpielBrett::SIZE {
+                    let schlagen_position = Position {
+                        spalte: match position.spalte as isize + richtung_h.offset() * number_of_fields as isize {
+                            spalte @ 0.. => spalte as usize,
+                            _ => continue,
+                        },
+                        zeile: match position.zeile as isize + richtung_v.offset() * number_of_fields as isize {
+                            zeile @ 0.. => zeile as usize,
+                            _ => continue,
+                        },
+                    };
+                    if !schlagen_position.valid() {
+                        continue;
+                    }
+                    
+                    match self.get(schlagen_position) {
+                        Feld::Leer => continue,
+                        Feld::Dame(schlagen_spieler) | Feld::Stein(schlagen_spieler) if schlagen_spieler == spieler => continue 'richtung_v,
+                        Feld::Dame(_) | Feld::Stein(_) => (),
+                    }
+
+                    let neue_position = Position {
+                        spalte: match position.spalte as isize + richtung_h.offset() * (number_of_fields as isize + 1) {
+                            spalte @ 0.. => spalte as usize,
+                            _ => continue,
+                        },
+                        zeile: match position.zeile as isize + richtung_v.offset() * (number_of_fields as isize + 1) {
+                            zeile @ 0.. => zeile as usize,
+                            _ => continue,
+                        }
+                    };
+                    if !neue_position.valid() {
+                        continue;
+                    }
+                    if !matches!(self.get(neue_position), Feld::Leer) {
+                        continue 'richtung_v;
+                    }
+
+                    let mut neues_brett = self.clone();
+                    neues_brett.set(position, Feld::Leer);
+                    neues_brett.set(schlagen_position, Feld::Leer);
+                    neues_brett.set(neue_position, Feld::Dame(spieler));
+
+                    let moves_len_before_append_following = moves.len();
+                    neues_brett.append_dame_schlagen_moves(neue_position, moves);
+                    if moves_len_before_append_following == moves.len() {
+                        moves.insert(neues_brett);
+                    }
+                }
+            }
+        }
+    }
+
+    fn append_all_dame_schlagen_moves(&self, spieler: Spieler, moves: &mut HashSet<Self>) {
+        for spalte in 0..SpielBrett::SIZE {
+            for zeile in 0..SpielBrett::SIZE {
+                let position = Position { spalte, zeile };
+                if !position.valid() {
+                    continue;
+                }
+
+                match self.get(position) {
+                    Feld::Leer | Feld::Stein(_) => continue,
+                    Feld::Dame(dame_spieler) if dame_spieler != spieler => continue,
+                    Feld::Dame(_) => (),
+                }
+
+                self.append_dame_schlagen_moves(position, moves);
+            }
+        }
+    }
+
     pub fn get_possible_moves(&self, spieler: Spieler) -> HashSet<Self> {
         let mut moves = HashSet::new();
         self.append_all_stein_schlagen_moves(spieler, &mut moves);
-        println!("{}", moves.len());
+        self.append_all_dame_schlagen_moves(spieler, &mut moves);
         if !moves.is_empty() {
             return moves;
         }
         self.append_all_stein_moves(spieler, &mut moves);
+        self.append_all_dame_moves(spieler, &mut moves);
         moves
     }
 }
@@ -204,7 +330,7 @@ mod tests {
     }
 
     #[test]
-    fn test_move_stein() {
+    fn test_stein_move() {
         test_moves!(
             "_ _ m _ "
             " _ _ M _"
@@ -496,6 +622,210 @@ mod tests {
             " _ _ _ _"
             "_ _ _ _ "
             " _ _ _ _"
+        );
+
+        // Zug endet, wenn ein Stein zur Dame konvertiert wurde
+        test_moves!(
+            "_ _ _ _ "
+            " M m _ _"
+            "c _ _ _ "
+            " _ _ _ _"
+            "_ _ _ _ "
+            " _ _ _ _"
+            "_ _ _ _ "
+            " _ _ _ _"
+
+            possible moves for Spieler::Computer:
+            "_ C _ _ "
+            " _ m _ _"
+            "_ _ _ _ "
+            " _ _ _ _"
+            "_ _ _ _ "
+            " _ _ _ _"
+            "_ _ _ _ "
+            " _ _ _ _"
+        );
+    }
+
+    #[test]
+    fn test_dame_move() {
+        test_moves!(
+            "_ _ _ _ "
+            " _ M _ _"
+            "_ _ _ _ "
+            " _ _ _ _"
+            "c _ _ _ "
+            " _ _ _ _"
+            "_ _ _ _ "
+            " _ _ _ _"
+
+            possible moves for Spieler::Mensch:
+            "_ M _ _ "
+            " _ _ _ _"
+            "_ _ _ _ "
+            " _ _ _ _"
+            "c _ _ _ "
+            " _ _ _ _"
+            "_ _ _ _ "
+            " _ _ _ _"
+            or
+            "_ _ M _ "
+            " _ _ _ _"
+            "_ _ _ _ "
+            " _ _ _ _"
+            "c _ _ _ "
+            " _ _ _ _"
+            "_ _ _ _ "
+            " _ _ _ _"
+            or
+            "_ _ _ _ "
+            " _ _ _ _"
+            "_ M _ _ "
+            " _ _ _ _"
+            "c _ _ _ "
+            " _ _ _ _"
+            "_ _ _ _ "
+            " _ _ _ _"
+            or
+            "_ _ _ _ "
+            " _ _ _ _"
+            "_ _ _ _ "
+            " M _ _ _"
+            "c _ _ _ "
+            " _ _ _ _"
+            "_ _ _ _ "
+            " _ _ _ _"
+            or
+            "_ _ _ _ "
+            " _ _ _ _"
+            "_ _ M _ "
+            " _ _ _ _"
+            "c _ _ _ "
+            " _ _ _ _"
+            "_ _ _ _ "
+            " _ _ _ _"
+            or
+            "_ _ _ _ "
+            " _ _ _ _"
+            "_ _ _ _ "
+            " _ _ M _"
+            "c _ _ _ "
+            " _ _ _ _"
+            "_ _ _ _ "
+            " _ _ _ _"
+            or
+            "_ _ _ _ "
+            " _ _ _ _"
+            "_ _ _ _ "
+            " _ _ _ _"
+            "c _ _ M "
+            " _ _ _ _"
+            "_ _ _ _ "
+            " _ _ _ _"
+            or
+            "_ _ _ _ "
+            " _ _ _ _"
+            "_ _ _ _ "
+            " _ _ _ _"
+            "c _ _ _ "
+            " _ _ _ M"
+            "_ _ _ _ "
+            " _ _ _ _"
+        );
+    }
+
+    #[test]
+    fn test_dame_schlagen() {
+        test_moves!(
+            "_ _ _ _ "
+            " _ _ m _"
+            "_ _ _ _ "
+            " _ C _ _"
+            "_ _ _ _ "
+            " _ _ _ _"
+            "_ _ _ _ "
+            " _ _ _ _"
+
+            possible moves for Spieler::Computer:
+            "_ _ _ C "
+            " _ _ _ _"
+            "_ _ _ _ "
+            " _ _ _ _"
+            "_ _ _ _ "
+            " _ _ _ _"
+            "_ _ _ _ "
+            " _ _ _ _"
+        );
+
+        // Mehrere Möglichkeiten
+        test_moves!(
+            "_ _ _ _ "
+            " _ _ M _"
+            "_ _ _ _ "
+            " _ C _ _"
+            "_ _ m _ "
+            " _ _ _ _"
+            "_ _ _ _ "
+            " _ _ _ _"
+
+            possible moves for Spieler::Computer:
+            "_ _ _ C "
+            " _ _ _ _"
+            "_ _ _ _ "
+            " _ _ _ _"
+            "_ _ m _ "
+            " _ _ _ _"
+            "_ _ _ _ "
+            " _ _ _ _"
+            or
+            "_ _ _ _ "
+            " _ _ M _"
+            "_ _ _ _ "
+            " _ _ _ _"
+            "_ _ _ _ "
+            " _ _ C _"
+            "_ _ _ _ "
+            " _ _ _ _"
+        );
+
+        // Mehrer nacheinander schlagen
+        test_moves!(
+            "_ _ _ _ "
+            " _ _ m _"
+            "_ _ _ _ "
+            " _ C _ _"
+            "_ m _ _ "
+            " _ _ _ _"
+            "_ _ _ m "
+            " _ _ _ _"
+
+            possible moves for Spieler::Computer:
+            "_ _ _ _ "
+            " _ _ _ _"
+            "_ _ _ _ "
+            " _ _ _ _"
+            "_ _ _ _ "
+            " C _ _ _"
+            "_ _ _ m "
+            " _ _ _ _"
+            or
+            "_ _ _ C "
+            " _ _ _ _"
+            "_ _ _ _ "
+            " _ _ _ _"
+            "_ _ _ _ "
+            " _ _ _ _"
+            "_ _ _ m "
+            " _ _ _ _"
+            or
+            "_ _ _ _ "
+            " _ _ m _"
+            "_ _ _ _ "
+            " _ _ _ _"
+            "_ m _ _ "
+            " _ _ _ _"
+            "_ _ _ _ "
+            " _ _ _ C"
         );
     }
 }

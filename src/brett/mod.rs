@@ -94,12 +94,6 @@ impl Zeile {
             }
         }
     }
-
-    pub fn to_string(&self, zeile: usize) -> String {
-        let mut result = String::with_capacity(SpielBrett::SIZE);
-        self.append_to_string(zeile, &mut result);
-        result
-    }
 }
 
 #[derive(Clone, Default, PartialEq, Eq, Hash)]
@@ -155,7 +149,7 @@ impl SpielBrett {
 }
 
 impl Debug for SpielBrett {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         match f.write_str(&self.to_string()) {
             Ok(_) => Ok(()),
             Err(err) => Err(err),
