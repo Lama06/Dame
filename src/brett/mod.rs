@@ -1,6 +1,7 @@
 use std::{
+    default,
     fmt::{self, Debug, Formatter},
-    ops::Not, default,
+    ops::Not,
 };
 
 mod position;

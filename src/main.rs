@@ -1,5 +1,5 @@
-use dame::brett::{SpielBrett, Feld, Spieler, Position};
-use minifb::{Window, WindowOptions, Key, MouseMode};
+use dame::brett::{Feld, Position, SpielBrett, Spieler};
+use minifb::{Key, MouseMode, Window, WindowOptions};
 
 const FELD_SIZE: usize = 100;
 const SIZE: usize = FELD_SIZE * SpielBrett::SIZE;
@@ -46,7 +46,8 @@ impl Application {
                 " c c c c\n",
                 "c c c c \n",
                 " c c c c",
-            )).unwrap(),
+            ))
+            .unwrap(),
             buffer: vec![0; SIZE * SIZE],
             window: {
                 let mut window = match Window::new("Dame", SIZE, SIZE, WindowOptions::default()) {
@@ -62,12 +63,19 @@ impl Application {
     }
 
     fn set_pixel(&mut self, x: usize, y: usize, color: Color) {
-        self.buffer[y*SIZE+x] = color;
+        self.buffer[y * SIZE + x] = color;
     }
 
-    fn draw_rect(&mut self, x_start: usize, y_start: usize, width: usize, height: usize, color: Color) {
-        for x in x_start..x_start+width {
-            for y in y_start..y_start+height {
+    fn draw_rect(
+        &mut self,
+        x_start: usize,
+        y_start: usize,
+        width: usize,
+        height: usize,
+        color: Color,
+    ) {
+        for x in x_start..x_start + width {
+            for y in y_start..y_start + height {
                 self.set_pixel(x, y, color);
             }
         }
@@ -78,11 +86,29 @@ impl Application {
             for spalte in 0..SpielBrett::SIZE {
                 let position = Position { spalte, zeile };
                 if !position.valid() {
-                    self.draw_rect(spalte*FELD_SIZE, zeile*FELD_SIZE, FELD_SIZE, FELD_SIZE, WHITE);
+                    self.draw_rect(
+                        spalte * FELD_SIZE,
+                        zeile * FELD_SIZE,
+                        FELD_SIZE,
+                        FELD_SIZE,
+                        WHITE,
+                    );
                     continue;
                 }
-                self.draw_rect(spalte*FELD_SIZE, zeile*FELD_SIZE, FELD_SIZE, FELD_SIZE, BLACK);
-                self.draw_rect(spalte*FELD_SIZE+15, zeile*FELD_SIZE+15, FELD_SIZE-30, FELD_SIZE-30, get_feld_color(self.brett.get(position)));
+                self.draw_rect(
+                    spalte * FELD_SIZE,
+                    zeile * FELD_SIZE,
+                    FELD_SIZE,
+                    FELD_SIZE,
+                    BLACK,
+                );
+                self.draw_rect(
+                    spalte * FELD_SIZE + 15,
+                    zeile * FELD_SIZE + 15,
+                    FELD_SIZE - 30,
+                    FELD_SIZE - 30,
+                    get_feld_color(self.brett.get(position)),
+                );
             }
         }
     }
@@ -123,7 +149,9 @@ impl Application {
 
             self.draw();
 
-            self.window.update_with_buffer(&self.buffer, SIZE, SIZE).unwrap();
+            self.window
+                .update_with_buffer(&self.buffer, SIZE, SIZE)
+                .unwrap();
         }
     }
 }
@@ -131,6 +159,6 @@ impl Application {
 fn main() {
     match Application::open() {
         Some(app) => app.update_loop(),
-        None => {},
+        None => {}
     }
 }
