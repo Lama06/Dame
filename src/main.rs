@@ -115,7 +115,7 @@ impl Application {
 
     fn handle_input(&mut self) {
         if self.window.is_key_released(Key::Space) {
-            self.brett = self.brett.calculate_best_next_move(7);
+            self.brett = self.brett.get_best_move(7);
         }
 
         if let Some((mouse_x, mouse_y)) = self.window.get_mouse_pos(MouseMode::Discard) {
